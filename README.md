@@ -54,4 +54,4 @@ This repository is configured to deploy to GitHub Pages from the `index` branch.
 The GitHub Pages deployment is useful for showcasing static documentation or a landing page.
 
 ---
-CREATED BY : AL-ADZMI S. SAJALUN
+
