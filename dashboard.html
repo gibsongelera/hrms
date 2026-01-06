@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - HRMS</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .dashboard-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .dashboard-header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .dashboard-header p {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .clock-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.2);
+        }
+
+        .stat-title {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .action-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.2);
+        }
+
+        .action-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-title {
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .action-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .demo-banner {
+            background: rgba(79, 70, 229, 0.1);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: var(--text-main);
+        }
+
+        .demo-banner strong {
+            color: var(--primary);
+        }
+
+        .btn-logout {
+            padding: 0.75rem 1.5rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--radius-md);
+            color: #ef4444;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <div class="dashboard-container">
+        <div class="demo-banner">
+            <strong>Demo Mode:</strong> This is a static preview. For full functionality, download and install the application locally.
+        </div>
+
+        <div class="dashboard-header">
+            <div>
+                <h1>My Dashboard</h1>
+                <p>Welcome back! Here's your overview</p>
+            </div>
+            <div>
+                <div class="clock-display" id="clock">--:--:--</div>
+                <div style="text-align: right; margin-top: 0.5rem;">
+                    <a href="login.html" class="btn-logout">Logout</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Attendance Status</div>
+                <div class="stat-value" style="font-size: 1.5rem; color: #10b981;">Active</div>
+                <div class="stat-label">Currently Clocked In</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-title">Hours Worked (This Month)</div>
+                <div class="stat-value">168</div>
+                <div class="stat-label">hours</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-title">Remaining Leaves</div>
+                <div class="stat-value">15</div>
+                <div class="stat-label">days available</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-title">This Month's Attendance</div>
+                <div class="stat-value">22</div>
+                <div class="stat-label">days present</div>
+            </div>
+        </div>
+
+        <div>
+            <h2 style="color: var(--text-main); margin-bottom: 1.5rem; font-size: 1.5rem;">Quick Actions</h2>
+            <div class="quick-actions">
+                <a href="#" class="action-card">
+                    <div class="action-icon">⏰</div>
+                    <div class="action-title">Mark Attendance</div>
+                    <div class="action-desc">Clock in/out for today</div>
+                </a>
+
+                <a href="#" class="action-card">
+                    <div class="action-icon">📋</div>
+                    <div class="action-title">Leave Request</div>
+                    <div class="action-desc">Submit a leave application</div>
+                </a>
+
+                <a href="#" class="action-card">
+                    <div class="action-icon">💰</div>
+                    <div class="action-title">View Payslip</div>
+                    <div class="action-desc">Download your payslip</div>
+                </a>
+
+                <a href="#" class="action-card">
+                    <div class="action-icon">👤</div>
+                    <div class="action-title">My Profile</div>
+                    <div class="action-desc">Update your information</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Real-time clock
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Prevent default action on quick action cards
+        document.querySelectorAll('.action-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('This is a demo preview. Download and install the application locally to access full functionality.');
+            });
+        });
+    </script>
+</body>
+</html>
+
