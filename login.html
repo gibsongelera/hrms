@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - HRMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0f172a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bg-shapes {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-shapes::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 1) 100%);
+        }
+
+        .shape {
+            position: absolute;
+            opacity: 0.3;
+            filter: blur(2px);
+            animation: float 20s infinite ease-in-out alternate;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .shape-1 {
+            top: 5%;
+            left: 5%;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), transparent);
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+            animation-duration: 25s;
+        }
+
+        .shape-2 {
+            bottom: 5%;
+            right: 5%;
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), transparent);
+            clip-path: circle(50% at 50% 50%);
+            animation-duration: 30s;
+            animation-direction: alternate-reverse;
+        }
+
+        .shape-3 {
+            top: 50%;
+            left: 80%;
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), transparent);
+            clip-path: polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%);
+            animation-duration: 20s;
+        }
+
+        .network-grid {
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+            background-size: 40px 40px;
+            z-index: 1;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            100% {
+                transform: translate(30px, 50px) rotate(10deg);
+            }
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 540px;
+            padding: 2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 3.5rem 3rem;
+            box-shadow:
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .login-card:hover {
+            box-shadow:
+                0 30px 60px -12px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(79, 70, 229, 0.3) inset,
+                0 0 40px rgba(79, 70, 229, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .login-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4f46e5, #06b6d4);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4f46e5, #06b6d4);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        }
+
+        .login-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .login-subtitle {
+            color: #94a3b8;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            color: #e2e8f0;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group:focus-within .form-label {
+            color: #818cf8;
+            transform: translateX(4px);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            transition: color 0.3s ease;
+            pointer-events: none;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1.125rem 1.125rem 1.125rem 3.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(51, 65, 85, 0.5);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-input:focus + .input-icon {
+            color: #818cf8;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 1.125rem;
+            background: linear-gradient(135deg, #4f46e5, #06b6d4);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .demo-info {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(79, 70, 229, 0.1);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            border-radius: 8px;
+            color: #c7d2fe;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .demo-info strong {
+            color: #818cf8;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="network-grid"></div>
+    </div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <h1 class="login-title">HRMS</h1>
+                <p class="login-subtitle">Human Resource Management System</p>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="email">Email Address</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
+                        <span class="input-icon">✉</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
+                        <span class="input-icon">🔒</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login">Sign In</button>
+            </form>
+
+            <div class="demo-info">
+                <strong>Demo Mode:</strong> Enter any email and password to access the dashboard preview
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Hide error message
+            errorMessage.classList.remove('show');
+            
+            // Simple validation - in demo mode, accept any input
+            if (email && password) {
+                // Redirect to dashboard
+                window.location.href = 'dashboard.html';
+            } else {
+                errorMessage.textContent = 'Please enter both email and password';
+                errorMessage.classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>
+

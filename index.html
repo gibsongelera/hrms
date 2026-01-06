@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRMS - Human Resource Management System</title>
+    <meta http-equiv="refresh" content="0; url=login.html">
+    <script>
+        window.location.href = "login.html";
+    </script>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .landing-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+        .landing-hero {
+            max-width: 900px;
+            margin-bottom: 3rem;
+        }
+        .landing-hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+        .landing-hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 3rem 0;
+        }
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.2);
+        }
+        .feature-card h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .feature-card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        .cta-section {
+            margin-top: 4rem;
+            padding: 3rem;
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            max-width: 800px;
+        }
+        .cta-section h2 {
+            color: var(--text-main);
+            margin-bottom: 1rem;
+        }
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+        }
+        .btn-secondary {
+            background: var(--bg-surface);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .warning-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-top: 2rem;
+            color: var(--text-main);
+        }
+        .warning-box strong {
+            color: #ef4444;
+        }
+        @media (max-width: 768px) {
+            .landing-hero h1 {
+                font-size: 2.5rem;
+            }
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <div class="landing-container">
+        <div class="landing-hero">
+            <h1>HRMS</h1>
+            <p>Human Resource Management System</p>
+            <p style="font-size: 1rem; color: var(--text-muted);">
+                A comprehensive solution for managing employees, attendance, payroll, and more
+            </p>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>📊 Premium Dashboard</h3>
+                <p>Real-time statistics and management overview with intuitive analytics</p>
+            </div>
+            <div class="feature-card">
+                <h3>⚙️ Dynamic Settings</h3>
+                <p>Configure company branding, currency (₱), and attendance rules</p>
+            </div>
+            <div class="feature-card">
+                <h3>⏰ Attendance Protocol</h3>
+                <p>Late thresholds and grace periods with automatic status tracking</p>
+            </div>
+            <div class="feature-card">
+                <h3>💰 Payroll & Payslips</h3>
+                <p>Generate payroll and export high-fidelity PDF payslips with color-retained designs</p>
+            </div>
+            <div class="feature-card">
+                <h3>🏢 Department Management</h3>
+                <p>Organize employees into custom specialized units</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔐 Secure Access</h3>
+                <p>Role-based access control for admin and employee portals</p>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>Installation Instructions</h2>
+            <div style="text-align: left; color: var(--text-muted); margin-top: 1.5rem;">
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">1. Preparations</h3>
+                <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Install <strong>XAMPP</strong> (or any LAMP stack with PHP 8.x and MySQL)</li>
+                    <li>Move the <code>hrms</code> folder into your <code>htdocs</code> directory</li>
+                </ul>
+
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">2. Database Setup</h3>
+                <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Open <strong>phpMyAdmin</strong> (<code>http://localhost/phpmyadmin</code>)</li>
+                    <li>Create a new database named <code>hrms_db</code></li>
+                    <li>Select the <code>hrms_db</code> database and go to the <strong>Import</strong> tab</li>
+                    <li>Choose the file located at <code>/sql/database_setup.sql</code></li>
+                    <li>Click <strong>Go</strong> to execute the setup</li>
+                </ul>
+
+                <h3 style="color: var(--primary); margin-bottom: 1rem;">3. Accessing the System</h3>
+                <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><strong>First Time Setup / Recovery</strong>: <code>http://localhost/hrms/restore_admin.php</code></li>
+                    <li><strong>Admin Portal</strong>: <code>http://localhost/hrms/admin/login.php</code>
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                            <li>User: <code>admin@hrms.com</code></li>
+                            <li>Pass: <code>admin123</code></li>
+                        </ul>
+                    </li>
+                    <li><strong>Employee Portal</strong>: <code>http://localhost/hrms/login.php</code></li>
+                </ul>
+            </div>
+
+            <div class="cta-buttons">
+                <a href="https://github.com/gibsongelera/hrms" class="btn btn-primary" target="_blank">
+                    View on GitHub
+                </a>
+                <a href="https://github.com/gibsongelera/hrms/archive/refs/heads/main.zip" class="btn btn-secondary">
+                    Download Source Code
+                </a>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Important Note:</strong> This is a PHP application that requires a server environment (XAMPP, LAMP, etc.) to run. 
+                GitHub Pages only serves static files, so the full application functionality is not available here. 
+                Download and install locally to use all features.
+            </div>
+        </div>
+
+        <div style="margin-top: 3rem; color: var(--text-muted); font-size: 0.9rem;">
+            
+            <p style="margin-top: 0.5rem;">
+                <a href="https://github.com/gibsongelera/hrms" style="color: var(--primary); text-decoration: none;">
+                    View Source Code on GitHub
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
