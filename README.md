@@ -28,5 +28,30 @@
 - **Payroll & Payslips**: Generate payroll and export high-fidelity PDF payslips with color-retained designs.
 - **Department Management**: Organize employees into custom specialized units.
 
+## GitHub Pages Deployment
+
+This repository is configured to deploy to GitHub Pages from the `index` branch.
+
+### Setup Instructions:
+
+1. **Enable GitHub Pages in Repository Settings:**
+   - Go to your repository on GitHub: https://github.com/gibsongelera/hrms
+   - Click on **Settings** → **Pages**
+   - Under **Source**, select **GitHub Actions** (not "Deploy from a branch")
+   - The workflow will automatically deploy when you push to the `index` branch
+
+2. **Access Your Site:**
+   - After deployment, your site will be available at: `https://gibsongelera.github.io/hrms/`
+
+### Important Note:
+⚠️ **GitHub Pages Limitations**: GitHub Pages only serves static files (HTML, CSS, JavaScript). Since this is a PHP application that requires a server and database, the full functionality will not work on GitHub Pages. For a production PHP application, consider using services like:
+- Heroku
+- DigitalOcean App Platform
+- AWS Elastic Beanstalk
+- Vercel (with serverless functions)
+- Traditional web hosting with PHP support
+
+The GitHub Pages deployment is useful for showcasing static documentation or a landing page.
+
 ---
 CREATED BY : AL-ADZMI S. SAJALUN
