@@ -255,7 +255,7 @@ try {
 
             <div
                 style="text-align: center; margin-top: 2rem; font-size: 0.7rem; color: #475569; letter-spacing: 0.1em; text-transform: uppercase;">
-                HRMS Security Core &bull; AL-ADZMI S. SAJALUN
+                HRMS Security Core &bull; 
             </div>
         </div>
     </div>
