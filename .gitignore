@@ -1,0 +1,28 @@
+# Uploads and user-generated content
+uploads/*
+!uploads/.gitkeep
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment files (if you add them later)
+.env
+.env.local
+

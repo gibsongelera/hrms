@@ -1,0 +1,6 @@
+/* CRITICAL: This is a test file to verify CSS is loading */
+.glass-card {
+    background: #FF0000 !important;
+    /* Bright red to test if this loads */
+    border: 5px solid #00FF00 !important;
+}
