@@ -1,7 +1,6 @@
 <?php
 /**
  * HRMS - Admin Recovery & Setup Utility
- * Created by AL-ADZMI S. SAJALUN
  * Date: December 29, 2025
  */
 
