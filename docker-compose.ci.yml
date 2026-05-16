@@ -1,0 +1,11 @@
+# CI override — uses different host ports so Jenkins tests don't clash with the running HRMS stack
+services:
+  web:
+    ports:
+      - "8888:80"
+  db:
+    ports:
+      - "3308:3306"
+  phpmyadmin:
+    ports:
+      - "8889:80"

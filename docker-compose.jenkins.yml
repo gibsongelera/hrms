@@ -1,0 +1,28 @@
+services:
+  jenkins:
+    build:
+      context: ./docker/jenkins
+      dockerfile: Dockerfile
+    image: hrms-jenkins:latest
+    container_name: hrms_jenkins
+    restart: unless-stopped
+    ports:
+      - "9090:8080"    # Jenkins web UI  → http://localhost:9090
+      - "50000:50000"  # Jenkins agent port
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock   # gives Jenkins access to host Docker
+      - .:/workspace/hrms                            # mounts your project so Jenkins can read it
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+    networks:
+      - hrms_net
+
+volumes:
+  jenkins_home:
+
+networks:
+  hrms_net:
+    external: true
+    name: hrms-main_hrms_net
