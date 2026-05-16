@@ -1,8 +1,8 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$database = "hrms_db";
+$servername = getenv('DB_HOST') ?: 'localhost';
+$username   = getenv('DB_USER') ?: 'root';
+$password   = getenv('DB_PASS') ?: '';
+$database   = getenv('DB_NAME') ?: 'hrms_db';
 
 try {
     $conn = new mysqli($servername, $username, $password, $database);
