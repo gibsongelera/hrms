@@ -52,19 +52,35 @@ pipeline {
         stage('Smoke Test (compose up)') {
             steps {
                 script {
-                    // Uses docker-compose.ci.yml override so CI test ports (8888/8889/3308)
-                    // don't clash with the always-on HRMS stack on 8080/8081/3307
+                    // We test the app from INSIDE the web container (docker exec)
+                    // because Jenkins runs in its own container and can't reach the
+                    // host's published ports via "localhost".
                     if (isUnix()) {
                         sh '''
+                            set -e
                             docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
                                 -f docker-compose.yml -f docker-compose.ci.yml up -d
-                            sleep 30
+
+                            echo "Waiting up to 60s for hrms_web_ci to respond..."
+                            success=0
+                            for i in $(seq 1 30); do
+                                if docker exec hrms_web_ci curl -fsS -o /dev/null -w "%{http_code}" http://localhost/ | grep -qE "^(200|302)$"; then
+                                    echo "App is responding."
+                                    success=1
+                                    break
+                                fi
+                                sleep 2
+                            done
+
                             docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
                                 -f docker-compose.yml -f docker-compose.ci.yml ps
-                            curl -fsS http://localhost:8888/ || \
-                                (docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
-                                    -f docker-compose.yml -f docker-compose.ci.yml \
-                                    logs --tail=100 web && exit 1)
+
+                            if [ "$success" -ne 1 ]; then
+                                echo "App never responded; printing logs:"
+                                docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
+                                    -f docker-compose.yml -f docker-compose.ci.yml logs --tail=200 web
+                                exit 1
+                            fi
                         '''
                     } else {
                         bat '''
@@ -73,10 +89,10 @@ pipeline {
                             ping 127.0.0.1 -n 30 > nul
                             docker compose -p %COMPOSE_PROJECT_NAME%_ci ^
                                 -f docker-compose.yml -f docker-compose.ci.yml ps
-                            curl -fsS http://localhost:8888/ || ^
+                            docker exec hrms_web_ci curl -fsS -o NUL http://localhost/ || ^
                                 ( docker compose -p %COMPOSE_PROJECT_NAME%_ci ^
                                     -f docker-compose.yml -f docker-compose.ci.yml ^
-                                    logs --tail=100 web & exit /b 1 )
+                                    logs --tail=200 web & exit /b 1 )
                         '''
                     }
                 }
