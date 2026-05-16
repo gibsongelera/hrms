@@ -1,11 +1,15 @@
-# CI override — uses different host ports so Jenkins tests don't clash with the running HRMS stack
+# CI override — uses different host ports AND container names so Jenkins tests
+# don't clash with the always-on HRMS stack (which pins container_name in docker-compose.yml).
 services:
   web:
+    container_name: hrms_web_ci
     ports:
       - "8888:80"
   db:
+    container_name: hrms_db_ci
     ports:
       - "3308:3306"
   phpmyadmin:
+    container_name: hrms_pma_ci
     ports:
       - "8889:80"
