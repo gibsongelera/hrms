@@ -58,14 +58,17 @@ pipeline {
                     if (isUnix()) {
                         sh '''
                             set -e
+                            # Only start "web" (which pulls in "db" via depends_on).
+                            # Skip phpmyadmin in CI — it's not needed for smoke testing
+                            # and its dependency timeout sometimes fires before MySQL is healthy.
                             docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
-                                -f docker-compose.yml -f docker-compose.ci.yml up -d
+                                -f docker-compose.yml -f docker-compose.ci.yml up -d web
 
-                            echo "Waiting up to 60s for hrms_web_ci to respond..."
+                            echo "Waiting up to 120s for hrms_web_ci to respond..."
                             success=0
-                            for i in $(seq 1 30); do
-                                if docker exec hrms_web_ci curl -fsS -o /dev/null -w "%{http_code}" http://localhost/ | grep -qE "^(200|302)$"; then
-                                    echo "App is responding."
+                            for i in $(seq 1 60); do
+                                if docker exec hrms_web_ci curl -fsS -o /dev/null -w "%{http_code}" http://localhost/ 2>/dev/null | grep -qE "^(200|302)$"; then
+                                    echo "App is responding (attempt $i)."
                                     success=1
                                     break
                                 fi
@@ -78,21 +81,21 @@ pipeline {
                             if [ "$success" -ne 1 ]; then
                                 echo "App never responded; printing logs:"
                                 docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
-                                    -f docker-compose.yml -f docker-compose.ci.yml logs --tail=200 web
+                                    -f docker-compose.yml -f docker-compose.ci.yml logs --tail=200
                                 exit 1
                             fi
                         '''
                     } else {
                         bat '''
                             docker compose -p %COMPOSE_PROJECT_NAME%_ci ^
-                                -f docker-compose.yml -f docker-compose.ci.yml up -d
-                            ping 127.0.0.1 -n 30 > nul
+                                -f docker-compose.yml -f docker-compose.ci.yml up -d web
+                            ping 127.0.0.1 -n 60 > nul
                             docker compose -p %COMPOSE_PROJECT_NAME%_ci ^
                                 -f docker-compose.yml -f docker-compose.ci.yml ps
                             docker exec hrms_web_ci curl -fsS -o NUL http://localhost/ || ^
                                 ( docker compose -p %COMPOSE_PROJECT_NAME%_ci ^
                                     -f docker-compose.yml -f docker-compose.ci.yml ^
-                                    logs --tail=200 web & exit /b 1 )
+                                    logs --tail=200 & exit /b 1 )
                         '''
                     }
                 }
