@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     options {
-        timestamps()
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 30, unit: 'MINUTES')
     }
@@ -53,19 +52,31 @@ pipeline {
         stage('Smoke Test (compose up)') {
             steps {
                 script {
+                    // Uses docker-compose.ci.yml override so CI test ports (8888/8889/3308)
+                    // don't clash with the always-on HRMS stack on 8080/8081/3307
                     if (isUnix()) {
                         sh '''
-                            docker compose -p $COMPOSE_PROJECT_NAME up -d
-                            sleep 25
-                            docker compose -p $COMPOSE_PROJECT_NAME ps
-                            curl -fsS http://localhost:8080/ || (docker compose -p $COMPOSE_PROJECT_NAME logs --tail=100 web && exit 1)
+                            docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
+                                -f docker-compose.yml -f docker-compose.ci.yml up -d
+                            sleep 30
+                            docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
+                                -f docker-compose.yml -f docker-compose.ci.yml ps
+                            curl -fsS http://localhost:8888/ || \
+                                (docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
+                                    -f docker-compose.yml -f docker-compose.ci.yml \
+                                    logs --tail=100 web && exit 1)
                         '''
                     } else {
                         bat '''
-                            docker compose -p %COMPOSE_PROJECT_NAME% up -d
-                            ping 127.0.0.1 -n 25 > nul
-                            docker compose -p %COMPOSE_PROJECT_NAME% ps
-                            curl -fsS http://localhost:8080/ || ( docker compose -p %COMPOSE_PROJECT_NAME% logs --tail=100 web & exit /b 1 )
+                            docker compose -p %COMPOSE_PROJECT_NAME%_ci ^
+                                -f docker-compose.yml -f docker-compose.ci.yml up -d
+                            ping 127.0.0.1 -n 30 > nul
+                            docker compose -p %COMPOSE_PROJECT_NAME%_ci ^
+                                -f docker-compose.yml -f docker-compose.ci.yml ps
+                            curl -fsS http://localhost:8888/ || ^
+                                ( docker compose -p %COMPOSE_PROJECT_NAME%_ci ^
+                                    -f docker-compose.yml -f docker-compose.ci.yml ^
+                                    logs --tail=100 web & exit /b 1 )
                         '''
                     }
                 }
@@ -74,9 +85,15 @@ pipeline {
                 always {
                     script {
                         if (isUnix()) {
-                            sh 'docker compose -p $COMPOSE_PROJECT_NAME down -v || true'
+                            sh '''
+                                docker compose -p ${COMPOSE_PROJECT_NAME}_ci \
+                                    -f docker-compose.yml -f docker-compose.ci.yml down -v || true
+                            '''
                         } else {
-                            bat 'docker compose -p %COMPOSE_PROJECT_NAME% down -v || ver > nul'
+                            bat '''
+                                docker compose -p %COMPOSE_PROJECT_NAME%_ci ^
+                                    -f docker-compose.yml -f docker-compose.ci.yml down -v || ver > nul
+                            '''
                         }
                     }
                 }
