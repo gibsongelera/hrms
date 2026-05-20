@@ -13,22 +13,7 @@
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
   </properties>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git">
-    <configVersion>2</configVersion>
-    <userRemoteConfigs>
-      <hudson.plugins.git.UserRemoteConfig>
-        <url>https://github.com/mucx-tech/hrms-main.git</url>
-      </hudson.plugins.git.UserRemoteConfig>
-    </userRemoteConfigs>
-    <branches>
-      <hudson.plugins.git.BranchSpec>
-        <name>*/main</name>
-      </hudson.plugins.git.BranchSpec>
-    </branches>
-    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
-    <submoduleCfg class="empty-list"/>
-    <extensions/>
-  </scm>
+  <scm class="hudson.scm.NullSCM"/>
   <canRoam>true</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -40,11 +25,13 @@
       <command>#!/bin/bash
 set -eux
 
+bash /var/jenkins_home/ci-scripts/jenkins-checkout.sh
+
 COMPOSE_PROJECT="${COMPOSE_PROJECT_NAME:-hrms-main}"
 NETWORK="${COMPOSE_PROJECT}_hrms_net"
 
 echo "======================================"
-echo "Job2 — HRMS Test"
+echo "Job2 - HRMS Test"
 echo "Network: ${NETWORK}"
 echo "======================================"
 
@@ -71,7 +58,7 @@ docker run --rm \
   php -r '
     $c = @mysqli_connect(getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASS"), getenv("DB_NAME"));
     if (!$c) { fwrite(STDERR, "DB connection failed\n"); exit(1); }
-    echo "DB OK — MySQL ", mysqli_get_server_info($c), "\n";
+    echo "DB OK - MySQL ", mysqli_get_server_info($c), "\n";
     mysqli_close($c);
   '
 
