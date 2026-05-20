@@ -1,14 +1,15 @@
 # Full CI/CD: push to GitHub, then trigger Jenkins job1 -> job2 -> job3
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File scripts/ci-cd-auto.ps1
-#   powershell -ExecutionPolicy Bypass -File scripts/ci-cd-auto.ps1 -Message "fix login" -Branch main
+#   powershell -ExecutionPolicy Bypass -File scripts/ci-cd-auto.ps1 -UpdateJobs
 
 param(
     [string]$Message = "CI/CD automated push $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
     [string]$Branch = "main",
     [switch]$SkipGitHub,
     [switch]$SkipJenkins,
-    [switch]$DeployOnly
+    [switch]$DeployOnly,
+    [switch]$UpdateJobs
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,21 +35,40 @@ $JenkinsUser  = if ($env:JENKINS_USER) { $env:JENKINS_USER } else { "gib" }
 $JenkinsToken = $env:JENKINS_API_TOKEN
 $GithubRepo   = if ($env:GITHUB_REPO) { $env:GITHUB_REPO } else { "mucx-tech/hrms-main" }
 $GithubToken  = $env:GITHUB_TOKEN
-$Auth         = "${JenkinsUser}:${JenkinsToken}"
+
+function Get-JenkinsHeaders {
+    $pair = "${JenkinsUser}:${JenkinsToken}"
+    $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
+    return @{ Authorization = "Basic $b64" }
+}
+
+function Wait-JenkinsReady {
+    param([int]$TimeoutSec = 300)
+    $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $null = Invoke-WebRequest -Uri "$JenkinsUrl/api/json" -UseBasicParsing -TimeoutSec 10
+            return $true
+        } catch {
+            Start-Sleep -Seconds 3
+        }
+    }
+    return $false
+}
 
 function Invoke-JenkinsBuild {
     param([string]$JobName)
+
     Write-Host "Triggering Jenkins: $JobName ..."
-    $pair = "${JenkinsUser}:${JenkinsToken}"
-    $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
+    $headers = Get-JenkinsHeaders
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
-    $headers = @{ Authorization = "Basic $b64" }
 
     $crumbResp = Invoke-RestMethod `
         -Uri "$JenkinsUrl/crumbIssuer/api/json" `
         -Headers $headers `
         -WebSession $session `
-        -Method Get
+        -Method Get `
+        -TimeoutSec 30
     $headers[$crumbResp.crumbRequestField] = $crumbResp.crumb
 
     $uri = "$JenkinsUrl/job/$JobName/build"
@@ -57,8 +77,10 @@ function Invoke-JenkinsBuild {
         -Method Post `
         -Headers $headers `
         -WebSession $session `
-        -UseBasicParsing
-    if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 300) {
+        -UseBasicParsing `
+        -TimeoutSec 60
+
+    if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) {
         Write-Host "  Queued $JobName"
         return $true
     }
@@ -70,20 +92,33 @@ function Wait-JenkinsJob {
         [string]$JobName,
         [int]$TimeoutSec = 1800
     )
-    $pair = "${JenkinsUser}:${JenkinsToken}"
-    $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
-    $headers = @{ Authorization = "Basic $b64" }
+
+    $headers = Get-JenkinsHeaders
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    $uri = "$JenkinsUrl/job/$JobName/lastBuild/api/json"
 
     while ((Get-Date) -lt $deadline) {
-        $info = Invoke-RestMethod -Uri "$JenkinsUrl/job/$JobName/lastBuild/api/json" -Headers $headers
-        if (-not $info.building) {
-            if ($info.result -eq "SUCCESS") {
-                Write-Host "  $JobName SUCCESS (#$($info.number))"
-                return $true
+        try {
+            $info = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 60
+            if (-not $info.building) {
+                if ($info.result -eq "SUCCESS") {
+                    Write-Host "  $JobName SUCCESS (#$($info.number))"
+                    return $true
+                }
+                if ($null -eq $info.result) {
+                    Write-Host "  $JobName still starting..."
+                } else {
+                    Write-Host "  $JobName finished: $($info.result) (#$($info.number))"
+                    return $false
+                }
+            } else {
+                Write-Host "  $JobName building (#$($info.number))..."
             }
-            Write-Host "  $JobName finished: $($info.result)"
-            return $false
+        } catch {
+            Write-Host "  Jenkins busy or restarting, retrying..."
+            if (-not (Wait-JenkinsReady -TimeoutSec 120)) {
+                throw "Jenkins not reachable while waiting for $JobName"
+            }
         }
         Start-Sleep -Seconds 10
     }
@@ -94,8 +129,14 @@ Write-Host ""
 Write-Host "=== HRMS CI/CD Auto (GitHub + Jenkins) ==="
 Write-Host ""
 
+if ($UpdateJobs -and -not $SkipJenkins) {
+    & (Join-Path $Root "scripts\jenkins-deploy-jobs.ps1") -Restart
+}
+
 if (-not $SkipJenkins) {
-    & (Join-Path $Root "scripts\jenkins-deploy-jobs.ps1")
+    if (-not (Wait-JenkinsReady)) {
+        throw "Jenkins is not running at $JenkinsUrl"
+    }
 }
 
 if (-not $SkipGitHub -and -not $DeployOnly) {
@@ -103,6 +144,8 @@ if (-not $SkipGitHub -and -not $DeployOnly) {
         Write-Warning "GITHUB_TOKEN not set in .env - skipping GitHub push"
     } else {
         Write-Host "Pushing to GitHub ($GithubRepo @ $Branch)..."
+        $env:GITHUB_REPO = $GithubRepo
+        $env:GITHUB_TOKEN = $GithubToken
         & (Join-Path $Root "scripts\github-auto-push.bat") $Message $Branch
         if ($LASTEXITCODE -ne 0) { throw "GitHub push failed" }
     }
@@ -111,19 +154,17 @@ if (-not $SkipGitHub -and -not $DeployOnly) {
 if (-not $SkipJenkins) {
     if (-not $JenkinsToken) {
         Write-Warning "JENKINS_API_TOKEN not set. Add your token to .env (Jenkins user: $JenkinsUser)"
-        Write-Host "Manual triggers:"
-        Write-Host "  $JenkinsUrl/job/job1/build"
-        Write-Host "  $JenkinsUrl/job/job2/build"
-        Write-Host "  $JenkinsUrl/job/job3/build"
         exit 1
     }
 
+    # job1 triggers job2, job2 triggers job3 (see jenkins/jobs/*/config.xml)
+    if (-not (Invoke-JenkinsBuild -JobName "job1")) {
+        throw "Failed to queue job1"
+    }
+
     foreach ($job in @("job1", "job2", "job3")) {
-        if (-not (Invoke-JenkinsBuild -JobName $job)) {
-            throw "Failed to queue $job"
-        }
         if (-not (Wait-JenkinsJob -JobName $job)) {
-            throw "$job failed"
+            throw "$job failed - see $JenkinsUrl/job/$job"
         }
     }
 }
