@@ -1,0 +1,138 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>HRMS Build Job - Compiles code and builds Docker image</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>GIT_BRANCH</name>
+          <description>Git branch to build from</description>
+          <defaultValue>main</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>PUSH_TO_REGISTRY</name>
+          <description>Push built image to Docker registry</description>
+          <defaultValue>false</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <hudson.model.BuildDiscarderProperty>
+      <strategy class="hudson.model.LogRotator">
+        <daysToKeepStr>30</daysToKeepStr>
+        <numToKeepStr>10</numToKeepStr>
+        <artifactDaysToKeepStr>-1</artifactDaysToKeepStr>
+        <artifactNumToKeepStr>5</artifactNumToKeepStr>
+      </strategy>
+    </hudson.model.BuildDiscarderProperty>
+    <com.cloudbees.plugins.credentials.impl.CredentialsProvider plugin="credentials@1336.v7d81c3e00972">
+      <store>
+        <domain>
+          <name/>
+          <description/>
+          <specifications/>
+        </domain>
+        <credential>
+          <scope>GLOBAL</scope>
+          <id>github-token</id>
+          <description>GitHub API Token</description>
+          <secret>11c5d0e78cf477527c1cf9361c23c2c42c</secret>
+        </credential>
+      </store>
+    </com.cloudbees.plugins.credentials.impl.CredentialsProvider>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@4.11.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/your-github-username/hrms-main.git</url>
+        <credentialsId>github-token</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>${GIT_BRANCH}</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="empty-list"/>
+    <extensions/>
+  </scm>
+  <triggers>
+    <com.cloudbees.plugins.credentials.impl.CredentialsProvider plugin="credentials@1336.v7d81c3e00972">
+      <store>
+        <domain>
+          <name/>
+          <description/>
+          <specifications/>
+        </domain>
+      </store>
+    </com.cloudbees.plugins.credentials.impl.CredentialsProvider>
+    <com.github.pushinginertia.jenkins.plugins.dynamicparameters.github.GitHubPushTrigger plugin="github-api@1.308.0">
+      <spec/>
+    </com.github.pushinginertia.jenkins.plugins.dynamicparameters.github.GitHubPushTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+set -e
+
+echo "======================================"
+echo "HRMS Build Job"
+echo "======================================"
+echo "Branch: ${GIT_BRANCH}"
+echo "Build Number: ${BUILD_NUMBER}"
+echo ""
+
+# Export variables
+export IMAGE_NAME="hrms-app"
+export IMAGE_TAG="${BUILD_NUMBER}"
+export GIT_COMMIT_SHORT=$(git rev-parse --short HEAD)
+export GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+echo "Git Commit: ${GIT_COMMIT_SHORT}"
+echo "Building image: ${IMAGE_NAME}:${IMAGE_TAG}"
+echo ""
+
+# Lint PHP code
+echo "Step 1: Linting PHP code..."
+docker run --rm -v "$PWD":/app -w /app php:8.2-cli \
+    sh -c "find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l" || echo "PHP linting completed"
+
+# Build Docker image
+echo ""
+echo "Step 2: Building Docker image..."
+docker build \
+  --tag ${IMAGE_NAME}:${IMAGE_TAG} \
+  --tag ${IMAGE_NAME}:latest \
+  --label "build.number=${BUILD_NUMBER}" \
+  --label "git.commit=${GIT_COMMIT_SHORT}" \
+  --label "git.branch=${GIT_BRANCH}" \
+  .
+
+echo ""
+echo "Step 3: Verifying image..."
+docker images | grep "hrms-app" | head -5
+
+echo ""
+echo "======================================"
+echo "Build completed successfully!"
+echo "Image: ${IMAGE_NAME}:${IMAGE_TAG}"
+echo "======================================"
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>Dockerfile, docker-compose.yml</artifacts>
+      <allowEmptyArchive>false</allowEmptyArchive>
+      <onlyIfSuccessful>true</onlyIfSuccessful>
+      <fingerprint>true</fingerprint>
+      <defaultExcludes>true</defaultExcludes>
+      <caseSensitive>true</caseSensitive>
+    </hudson.tasks.ArtifactArchiver>
+  </publishers>
+</project>

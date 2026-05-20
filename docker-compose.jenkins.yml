@@ -1,28 +1,38 @@
+version: '3.8'
+
 services:
   jenkins:
     build:
       context: ./docker/jenkins
       dockerfile: Dockerfile
-    image: hrms-jenkins:latest
+    image: hrms-jenkins:lts
     container_name: hrms_jenkins
     restart: unless-stopped
     ports:
-      - "9090:8080"    # Jenkins web UI  → http://localhost:9090
-      - "50000:50000"  # Jenkins agent port
+      - "9090:8080"
+      - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock   # gives Jenkins access to host Docker
-      - .:/workspace/hrms                            # mounts your project so Jenkins can read it
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./jenkins/jobs:/usr/share/jenkins/ref/jobs-seed:ro
+      - ./docker/jenkins/init.groovy.d:/usr/share/jenkins/ref/init.groovy.d:ro
     environment:
-      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
-      DOCKER_HOST: "unix:///var/run/docker.sock"
+      JAVA_OPTS: "-Xmx2048m -Djenkins.install.runSetupWizard=false"
+      JENKINS_JAVA_OPTIONS: "-Dhudson.security.csrf.protection.enabled=true"
+      GITHUB_REPO_URL: "https://github.com/mucx-tech/hrms-main.git"
     networks:
       - hrms_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
 volumes:
   jenkins_home:
+    driver: local
 
 networks:
   hrms_net:
-    external: true
-    name: hrms-main_hrms_net
+    driver: bridge

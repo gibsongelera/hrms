@@ -1,0 +1,76 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Job3 - Deployment: start HRMS stack with docker compose</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>30</daysToKeep>
+        <numToKeep>20</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>10</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/mucx-tech/hrms-main.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/main</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="empty-list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+set -eux
+
+COMPOSE_PROJECT="${COMPOSE_PROJECT_NAME:-hrms-main}"
+
+echo "Job3 - HRMS Deploy (staging)"
+mkdir -p backups
+
+docker compose -p "${COMPOSE_PROJECT}" -f docker-compose.yml down --remove-orphans || true
+docker compose -p "${COMPOSE_PROJECT}" -f docker-compose.yml up -d --build
+
+for i in $(seq 1 24); do
+  if docker exec hrms_db mysqladmin ping -h localhost -uroot -prootpass 2>/dev/null; then
+    echo "DB healthy"
+    break
+  fi
+  sleep 5
+done
+
+cat sql/database_setup.sql | docker exec -i hrms_db mysql -uroot -prootpass hrms_db || true
+
+for i in $(seq 1 12); do
+  if docker exec hrms_web curl -fsS -o /dev/null http://localhost/ 2>/dev/null; then
+    echo "Web healthy"
+    break
+  fi
+  sleep 5
+done
+
+docker ps --filter name=hrms_
+echo "Deploy complete - http://localhost:8080"
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

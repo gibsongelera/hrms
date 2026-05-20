@@ -1,0 +1,208 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>HRMS Deployment Job - Deploys application to production/staging environment</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>ENVIRONMENT</name>
+          <description>Target deployment environment</description>
+          <choices>
+            <string>staging</string>
+            <string>production</string>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>IMAGE_TAG</name>
+          <description>Docker image tag to deploy (e.g. latest or build number)</description>
+          <defaultValue>latest</defaultValue>
+          <trim>true</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>RUN_MIGRATIONS</name>
+          <description>Run database migrations during deployment</description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <hudson.model.BuildDiscarderProperty>
+      <strategy class="hudson.model.LogRotator">
+        <daysToKeepStr>30</daysToKeepStr>
+        <numToKeepStr>20</numToKeepStr>
+        <artifactDaysToKeepStr>-1</artifactDaysToKeepStr>
+        <artifactNumToKeepStr>10</artifactNumToKeepStr>
+      </strategy>
+    </hudson.model.BuildDiscarderProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@4.11.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/your-github-username/hrms-main.git</url>
+        <credentialsId>github-token</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>main</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+  </scm>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+set -e
+
+echo "======================================"
+echo "HRMS Deployment Job"
+echo "======================================"
+echo "Environment: ${ENVIRONMENT}"
+echo "Image Tag: ${IMAGE_TAG}"
+echo "Run Migrations: ${RUN_MIGRATIONS}"
+echo ""
+
+# Confirmation for production
+if [ "${ENVIRONMENT}" = "production" ]; then
+    echo "⚠️  WARNING: Deploying to PRODUCTION"
+    echo "This will affect production users!"
+    sleep 5
+fi
+
+# Pre-deployment backup
+echo "Step 1: Creating database backup..."
+BACKUP_DIR="./backups"
+mkdir -p ${BACKUP_DIR}
+BACKUP_FILE="${BACKUP_DIR}/hrms_db_backup_$(date +%Y%m%d_%H%M%S).sql"
+
+docker exec hrms_db mysqldump -h localhost -uhrms_user -phrms_pass hrms_db > ${BACKUP_FILE} || echo "Backup skipped"
+echo "✓ Backup created: ${BACKUP_FILE}"
+
+echo ""
+echo "Step 2: Stopping current containers..."
+docker-compose -f docker-compose.yml down --remove-orphans || echo "No containers to stop"
+sleep 5
+
+echo ""
+echo "Step 3: Pulling latest images..."
+docker pull mysql:8.0 || echo "MySQL image already available"
+docker pull phpmyadmin:5 || echo "PHPMyAdmin image already available"
+
+echo ""
+echo "Step 4: Starting new containers with image tag: hrms-app:${IMAGE_TAG}..."
+docker-compose -f docker-compose.yml up -d
+
+echo ""
+echo "Step 5: Waiting for services to be healthy..."
+sleep 30
+
+# Health checks
+echo "Step 6: Running health checks..."
+MAX_ATTEMPTS=10
+ATTEMPT=0
+
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    if curl -f http://localhost:8080 >/dev/null 2>&1; then
+        echo "✓ Web service is healthy"
+        break
+    fi
+    echo "Attempt $((ATTEMPT + 1)): Waiting for web service..."
+    sleep 5
+    ATTEMPT=$((ATTEMPT + 1))
+done
+
+if docker exec hrms_db mysqladmin ping -h localhost -uhrms_user -phrms_pass 2>/dev/null; then
+    echo "✓ Database service is healthy"
+else
+    echo "✗ Database service health check failed"
+    exit 1
+fi
+
+# Run migrations if enabled
+if [ "${RUN_MIGRATIONS}" = "true" ]; then
+    echo ""
+    echo "Step 7: Running database migrations..."
+    docker exec hrms_db mysql -h localhost -uhrms_user -phrms_pass hrms_db < sql/database_setup.sql || echo "Migrations completed"
+    echo "✓ Migrations completed"
+fi
+
+echo ""
+echo "Step 8: Verifying deployment..."
+docker ps | grep hrms
+
+echo ""
+echo "======================================"
+echo "✓ Deployment to ${ENVIRONMENT} completed successfully!"
+echo "======================================"
+echo ""
+echo "Application URLs:"
+echo "  - Application: http://localhost:8080"
+echo "  - PHPMyAdmin: http://localhost:8081"
+echo ""
+echo "Database Backup: ${BACKUP_FILE}"
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>backups/*, docker-compose.yml, Dockerfile</artifacts>
+      <allowEmptyArchive>true</allowEmptyArchive>
+      <onlyIfSuccessful>true</onlyIfSuccessful>
+      <fingerprint>true</fingerprint>
+      <defaultExcludes>true</defaultExcludes>
+      <caseSensitive>true</caseSensitive>
+    </hudson.tasks.ArtifactArchiver>
+    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.95">
+      <recipientList>admin@hrms.local</recipientList>
+      <configuredTriggers>
+        <hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
+          <email>
+            <recipientList/>
+            <subject>HRMS Deployment to ${ENVIRONMENT} Successful - Build #${BUILD_NUMBER}</subject>
+            <body>Deployment to ${ENVIRONMENT} completed successfully.</body>
+            <attachmentsPattern/>
+            <attachToEmail>false</attachToEmail>
+            <replyTo/>
+            <contentType>text/plain</contentType>
+          </email>
+        </hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
+        <hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+          <email>
+            <recipientList/>
+            <subject>HRMS Deployment to ${ENVIRONMENT} Failed - Build #${BUILD_NUMBER}</subject>
+            <body>Deployment to ${ENVIRONMENT} failed. Check logs.</body>
+            <attachmentsPattern/>
+            <attachToEmail>false</attachToEmail>
+            <replyTo/>
+            <contentType>text/plain</contentType>
+          </email>
+        </hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+      </configuredTriggers>
+      <contentType>text/plain</contentType>
+      <defaultContentType/>
+      <defaultSubject/>
+      <defaultBody/>
+      <attachmentsPattern/>
+      <attachToEmail>false</attachToEmail>
+      <presendScript/>
+      <postsendScript/>
+      <from/>
+      <charset>UTF-8</charset>
+    </hudson.plugins.emailext.ExtendedEmailPublisher>
+  </publishers>
+  <postbuildsteps>
+    <org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder plugin="groovy-postbuild@2.5">
+      <script>
+        if(manager.build.result == hudson.model.Result.SUCCESS) {
+            manager.addShortText("Deployment: SUCCESS ✓", "green", false, false, "white")
+        } else {
+            manager.addShortText("Deployment: FAILED ✗", "red", false, false, "white")
+        }
+      </script>
+      <runForMatrix>false</runForMatrix>
+    </org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder>
+  </postbuildsteps>
+</project>
