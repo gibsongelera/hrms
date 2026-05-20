@@ -5,7 +5,7 @@
 
 param(
     [string]$Message = "CI/CD automated push $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
-    [string]$Branch = "main",
+    [string]$Branch = "",
     [switch]$SkipGitHub,
     [switch]$SkipJenkins,
     [switch]$DeployOnly,
@@ -29,6 +29,11 @@ function Load-DotEnv {
 }
 
 Load-DotEnv (Join-Path $Root ".env")
+
+if (-not $Branch) {
+    $Branch = (git branch --show-current 2>$null)
+    if (-not $Branch) { $Branch = "main" }
+}
 
 $JenkinsUrl   = if ($env:JENKINS_URL) { $env:JENKINS_URL } else { "http://localhost:9090" }
 $JenkinsUser  = if ($env:JENKINS_USER) { $env:JENKINS_USER } else { "gib" }
@@ -147,7 +152,9 @@ if (-not $SkipGitHub -and -not $DeployOnly) {
         $env:GITHUB_REPO = $GithubRepo
         $env:GITHUB_TOKEN = $GithubToken
         & (Join-Path $Root "scripts\github-auto-push.bat") $Message $Branch
-        if ($LASTEXITCODE -ne 0) { throw "GitHub push failed" }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "GitHub push failed - continuing with Jenkins (fix git sync and push manually)"
+        }
     }
 }
 

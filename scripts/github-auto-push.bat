@@ -1,32 +1,37 @@
 @echo off
-REM GitHub Auto-Push Script for HRMS CI/CD (Windows)
-REM Usage: github-auto-push.bat "commit message" "branch"
+REM GitHub Auto-Push for HRMS CI/CD
+REM Usage: github-auto-push.bat "commit message" [branch]
 
 setlocal enabledelayedexpansion
 
 set COMMIT_MESSAGE=%~1
 if "!COMMIT_MESSAGE!"=="" set COMMIT_MESSAGE=Automated build %BUILD_NUMBER%
 
-set BRANCH=%~2
-if "!BRANCH!"=="" set BRANCH=main
+set TARGET_BRANCH=%~2
+if "!TARGET_BRANCH!"=="" (
+    for /f "delims=" %%b in ('git branch --show-current 2^>nul') do set TARGET_BRANCH=%%b
+)
+if "!TARGET_BRANCH!"=="" set TARGET_BRANCH=main
 
-if "!GITHUB_REPO!"=="" set GITHUB_REPO=mucx-tech/hrms-main
+if "!GITHUB_REPO!"=="" set GITHUB_REPO=gibsongelera/hrms
 
 if "!GITHUB_TOKEN!"=="" (
     echo Error: GITHUB_TOKEN environment variable not set
     exit /b 1
 )
 
+set REMOTE_URL=https://x-access-token:!GITHUB_TOKEN!@github.com/!GITHUB_REPO!.git
+
 echo.
-echo === GitHub Auto-Push Script ===
+echo === GitHub Auto-Push ===
 echo Repository: !GITHUB_REPO!
-echo Branch: !BRANCH!
+echo Branch: !TARGET_BRANCH!
 echo Message: !COMMIT_MESSAGE!
 echo.
 
 git --version >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-    echo Error: Git is not installed or not in PATH
+    echo Error: Git is not installed
     exit /b 1
 )
 
@@ -37,29 +42,33 @@ if %ERRORLEVEL% neq 0 (
 )
 
 git diff-index --quiet HEAD -- >nul 2>&1
-if %ERRORLEVEL% equ 0 (
-    echo No changes to commit
-    exit /b 0
+set HAS_CHANGES=%ERRORLEVEL%
+if %HAS_CHANGES% neq 0 (
+    git add -A
+    git commit -m "!COMMIT_MESSAGE!"
 )
 
-git add -A
-git commit -m "!COMMIT_MESSAGE!"
-if %ERRORLEVEL% neq 0 (
-    echo Nothing to commit
-    exit /b 0
+echo Syncing with remote...
+git fetch !REMOTE_URL! !TARGET_BRANCH! 2>nul
+if %ERRORLEVEL% equ 0 (
+    git rebase FETCH_HEAD 2>nul
+    if !ERRORLEVEL! neq 0 (
+        echo Rebase failed - resolve conflicts locally, then push again.
+        exit /b 1
+    )
+) else (
+    echo Remote branch new or not found - will create on push
 )
 
 echo Pushing to GitHub...
-set HTTPS_URL=https://!GITHUB_TOKEN!@github.com/!GITHUB_REPO!.git
-
-git push -u !HTTPS_URL! !BRANCH!
+git push !REMOTE_URL! HEAD:!TARGET_BRANCH!
 if %ERRORLEVEL% neq 0 (
     echo Error: Failed to push to GitHub
     exit /b 1
 )
 
 echo.
-echo === GitHub Auto-Push Completed Successfully ===
+echo === GitHub push OK ===
 echo.
 
 endlocal
