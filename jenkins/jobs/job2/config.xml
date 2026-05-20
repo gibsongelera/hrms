@@ -47,20 +47,14 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-echo "Step 2: DB connectivity from PHP..."
+echo "Step 2: DB connectivity test..."
 docker run --rm \
   --network "${NETWORK}" \
-  -e DB_HOST=hrms_db \
-  -e DB_USER=hrms_user \
-  -e DB_PASS=hrms_pass \
-  -e DB_NAME=hrms_db \
-  php:8.2-cli \
-  php -r '
-    $c = @mysqli_connect(getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASS"), getenv("DB_NAME"));
-    if (!$c) { fwrite(STDERR, "DB connection failed\n"); exit(1); }
-    echo "DB OK - MySQL ", mysqli_get_server_info($c), "\n";
-    mysqli_close($c);
-  '
+  mysql:8.0 \
+  mysql -h hrms_db -uhrms_user -phrms_pass hrms_db -e "SELECT 1 AS db_ok"
+
+echo "MySQL version:"
+docker exec hrms_db mysql -uroot -p"${MYSQL_ROOT_PASSWORD:-rootpass}" -e "SELECT VERSION();"
 
 echo "Step 3: CI smoke (web container)..."
 docker compose -p "${COMPOSE_PROJECT}_ci" -f docker-compose.yml -f docker-compose.ci.yml up -d web

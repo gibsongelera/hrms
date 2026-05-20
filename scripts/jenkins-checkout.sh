@@ -6,13 +6,15 @@ cd "${WORKSPACE:?}"
 
 REPO_SLUG="${GITHUB_REPO:-gibsongelera/hrms}"
 BRANCH="${GIT_BRANCH:-main}"
+STAMP_FILE="${WORKSPACE}/.jenkins-checkout-stamp"
+STAMP="${REPO_SLUG}@${BRANCH}"
 
-if [[ -f Dockerfile && -f docker-compose.yml ]]; then
-  echo "Workspace already has source"
+if [[ -f Dockerfile && -f docker-compose.yml && -f "$STAMP_FILE" && "$(cat "$STAMP_FILE")" == "$STAMP" ]]; then
+  echo "Workspace ready ($STAMP)"
   exit 0
 fi
 
-echo "Preparing workspace..."
+echo "Preparing workspace for $STAMP..."
 find . -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
 
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
@@ -23,8 +25,7 @@ fi
 
 echo "Cloning ${REPO_SLUG} (branch ${BRANCH})..."
 if ! git clone --depth 1 --branch "${BRANCH}" "${GIT_URL}" .; then
-  echo "ERROR: git clone failed for ${REPO_SLUG}"
-  echo "Check GITHUB_REPO in .env (use gibsongelera/hrms or mucx-tech/hrms-main)"
+  echo "ERROR: git clone failed for ${REPO_SLUG} branch ${BRANCH}"
   exit 1
 fi
 
@@ -34,4 +35,5 @@ if [[ ! -f Dockerfile ]]; then
   exit 1
 fi
 
+echo "$STAMP" > "$STAMP_FILE"
 echo "Checkout OK"
